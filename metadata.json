@@ -1,0 +1,6 @@
+{
+  "name": "ESDY Player",
+  "description": "A retro-realistic cassette deck music player with high-fidelity streaming, mega bass effects, authentic spinning reels, animated VU meters, audio analytics, and custom skins.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

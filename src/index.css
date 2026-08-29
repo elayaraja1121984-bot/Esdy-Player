@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Retro Font Utilities */
+.font-digital {
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.font-tech {
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.font-handwriting {
+  font-family: 'Caveat', cursive;
+}
+
+.font-retro-header {
+  font-family: 'Chakra Petch', sans-serif;
+}
+
+/* Brushed Metal Textures */
+.bg-brushed-metal {
+  background: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    repeating-linear-gradient(
+      0deg,
+      #1f242d 0px,
+      #1a1e26 1px,
+      #242a35 2px,
+      #1e222a 3px,
+      #171b22 4px
+    );
+}
+
+.bg-brushed-titanium {
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #181a1f 0px,
+      #14161a 1px,
+      #1c1f24 2px,
+      #16181d 3px,
+      #121417 4px
+    );
+}
+
+.bg-brushed-silver {
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #3a3f47 0px,
+      #2e333a 1px,
+      #454c56 2px,
+      #333842 3px,
+      #282d34 4px
+    );
+}
+
+.bg-brushed-wood {
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #2b1810 0px,
+      #22120b 1px,
+      #331d14 2px,
+      #1f1009 3px
+    );
+}
+
+.bg-brushed-gold {
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      #2b2210 0px,
+      #211a0b 1px,
+      #382c13 2px,
+      #1f180a 3px
+    );
+}
+
+/* Rotary Dial Radial Brushed Conic Gradient */
+.bg-knob-metallic {
+  background: radial-gradient(circle at 35% 35%, #4a5260 0%, #20242c 45%, #14171d 85%);
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8),
+    0 4px 10px rgba(0, 0, 0, 0.7),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.bg-knob-grooved {
+  background: conic-gradient(
+    from 0deg,
+    #2c323d,
+    #181c22,
+    #3b4350,
+    #1f232b,
+    #2c323d,
+    #181c22,
+    #3b4350,
+    #1f232b,
+    #2c323d
+  );
+}
+
+/* Skeuomorphic Inset Bevel */
+.bevel-inset {
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+    0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.bevel-outset {
+  box-shadow: 
+    0 2px 5px rgba(0, 0, 0, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Glowing Neon Elements */
+.glow-red {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.75), 0 0 4px rgba(248, 113, 113, 0.9);
+}
+
+.glow-coral {
+  box-shadow: 0 0 15px rgba(248, 113, 113, 0.6), 0 0 5px rgba(252, 165, 165, 0.8);
+}
+
+.glow-amber {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.75);
+}
+
+.glow-green {
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.75);
+}
+
+/* Custom Scrollbar for Cassette Player */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #12151b;
+}
+::-webkit-scrollbar-thumb {
+  background: #333d4b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e11d48;
+}
+
+/* Custom Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+input[type=range]:focus {
+  outline: none;
+}
