@@ -128,6 +128,32 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
             </a>
           </div>
 
+          {/* Method 3: Standalone Single HTML File Download */}
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <span className="font-tech font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5 text-xs">
+                <Download className="w-4 h-4 text-amber-400" />
+                Method 3: Download All-In-One .HTML File
+              </span>
+              <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-[9px] font-tech font-bold">
+                100% Offline
+              </span>
+            </div>
+
+            <p className="text-zinc-400 text-[11px] leading-relaxed">
+              Download the entire ESDY Player as a self-contained single <code className="text-amber-300 bg-amber-950/60 px-1 py-0.5 rounded">.html</code> file. Works on any computer, USB drive, or phone browser without any server setup:
+            </p>
+
+            <a
+              href="/standalone.html"
+              download="esdy-player-standalone.html"
+              className="w-full py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-lg font-tech font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow"
+            >
+              <Download className="w-4 h-4" />
+              Download All-In-One HTML
+            </a>
+          </div>
+
           {/* Quick Steps for Android Chrome */}
           <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3 flex flex-col gap-1.5 font-tech text-[11px]">
             <span className="text-zinc-300 font-bold uppercase tracking-wider mb-1 flex items-center gap-1">

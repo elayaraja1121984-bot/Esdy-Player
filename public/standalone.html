@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ESDY Player - Standalone Retro Deck</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- React & Babel for Standalone Execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-lcd { font-family: 'VT323', monospace; }
+    .font-tech { font-family: 'Share Tech Mono', monospace; }
+    .font-retro-header { font-family: 'Orbitron', sans-serif; }
+    
+    @keyframes spin-cw {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-reel {
+      animation: spin-cw 3s linear infinite;
+    }
+    .spin-reel-fast {
+      animation: spin-cw 0.8s linear infinite;
+    }
+    .tape-window-grid {
+      background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 8px 8px;
+    }
+    .reflection-overlay {
+      background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 45%, transparent 60%);
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center p-2 sm:p-4">
+  <div id="root" class="w-full max-w-md mx-auto"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Built-in Sample Tracks with Real Audio Streams
+    const DEFAULT_TRACKS = [
+      {
+        id: '1',
+        title: 'Retro Wave Drive',
+        artist: 'ESDY Synth Lab',
+        album: 'Analog Dreams Vol. 1',
+        duration: 184,
+        url: 'https://cdn.freesound.org/previews/568/568169_11861866-lq.mp3',
+        tapeColor: '#1e293b',
+        accentColor: '#3b82f6'
+      },
+      {
+        id: '2',
+        title: 'Cyberpunk Tokyo 1988',
+        artist: 'Neon Horizon',
+        album: 'Night City Tapes',
+        duration: 210,
+        url: 'https://cdn.freesound.org/previews/612/612629_11861866-lq.mp3',
+        tapeColor: '#31103f',
+        accentColor: '#ec4899'
+      },
+      {
+        id: '3',
+        title: 'Lo-Fi Chill Sunset',
+        artist: 'Kassette Beats',
+        album: 'Coffee & Chrome',
+        duration: 145,
+        url: 'https://cdn.freesound.org/previews/560/560446_11861866-lq.mp3',
+        tapeColor: '#1c1917',
+        accentColor: '#f59e0b'
+      }
+    ];
+
+    // ESDY Signature Logo SVG
+    function EsdyLogo({ size = 32 }) {
+      return (
+        <div style={{ width: size, height: size }} className="rounded-xl overflow-hidden shadow-md shrink-0">
+          <svg viewBox="0 0 100 100" width="100%" height="100%">
+            <defs>
+              <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#cce4ff" />
+                <stop offset="50%" stopColor="#e2ecff" />
+                <stop offset="100%" stopColor="#d6d8fb" />
+              </linearGradient>
+              <linearGradient id="blueGrad" x1="15%" y1="70%" x2="85%" y2="20%">
+                <stop offset="0%" stopColor="#0072ff" />
+                <stop offset="50%" stopColor="#0084ff" />
+                <stop offset="100%" stopColor="#0057d9" />
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" rx="22" fill="url(#bgGrad)" />
+            <path d="M46 38 C42 28 24 28 20 40 C16 52 22 66 36 66 C46 66 52 56 56 50" fill="none" stroke="url(#blueGrad)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M19 46 L36 46" stroke="url(#blueGrad)" strokeWidth="7" strokeLinecap="round" />
+            <path d="M52 48 C56 40 64 33 74 36 C84 39 86 52 80 62 C74 72 60 70 52 60 C48 55 45 48 41 43" fill="none" stroke="url(#blueGrad)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M37 66 L79 24" stroke="url(#blueGrad)" strokeWidth="8" strokeLinecap="round" />
+            <path d="M64 22 L82 21 L83 39" fill="none" stroke="url(#blueGrad)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      );
+    }
+
+    function App() {
+      const [tracks, setTracks] = useState(DEFAULT_TRACKS);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [currentTime, setCurrentTime] = useState(0);
+      const [duration, setDuration] = useState(0);
+      const [volume, setVolume] = useState(0.8);
+      const [megaBass, setMegaBass] = useState(true);
+      const [tapeSide, setTapeSide] = useState('A');
+      const [vuLeft, setVuLeft] = useState(0);
+      const [vuRight, setVuRight] = useState(0);
+      const [showPlaylist, setShowPlaylist] = useState(false);
+
+      const audioRef = useRef(new Audio());
+      const currentTrack = tracks[currentIndex];
+
+      // Audio setup & listeners
+      useEffect(() => {
+        const audio = audioRef.current;
+        audio.src = currentTrack.url;
+        audio.volume = volume;
+
+        const updateTime = () => setCurrentTime(audio.currentTime);
+        const updateDuration = () => setDuration(audio.duration || currentTrack.duration);
+        const onEnded = () => handleNext();
+
+        audio.addEventListener('timeupdate', updateTime);
+        audio.addEventListener('loadedmetadata', updateDuration);
+        audio.addEventListener('ended', onEnded);
+
+        if (isPlaying) {
+          audio.play().catch(() => setIsPlaying(false));
+        }
+
+        return () => {
+          audio.removeEventListener('timeupdate', updateTime);
+          audio.removeEventListener('loadedmetadata', updateDuration);
+          audio.removeEventListener('ended', onEnded);
+        };
+      }, [currentIndex]);
+
+      // VU Meter simulation
+      useEffect(() => {
+        if (!isPlaying) {
+          setVuLeft(0);
+          setVuRight(0);
+          return;
+        }
+        const interval = setInterval(() => {
+          const base = 40 + (megaBass ? 25 : 10);
+          setVuLeft(Math.min(100, Math.max(15, base + Math.random() * 45)));
+          setVuRight(Math.min(100, Math.max(15, base + Math.random() * 40)));
+        }, 120);
+        return () => clearInterval(interval);
+      }, [isPlaying, megaBass]);
+
+      const togglePlay = () => {
+        const audio = audioRef.current;
+        if (isPlaying) {
+          audio.pause();
+          setIsPlaying(false);
+        } else {
+          audio.play().then(() => setIsPlaying(true)).catch(e => console.log(e));
+        }
+      };
+
+      const handlePrev = () => {
+        setCurrentIndex((prev) => (prev > 0 ? prev - 1 : tracks.length - 1));
+      };
+
+      const handleNext = () => {
+        setCurrentIndex((prev) => (prev < tracks.length - 1 ? prev + 1 : 0));
+      };
+
+      const handleSeek = (e) => {
+        const time = Number(e.target.value);
+        setCurrentTime(time);
+        audioRef.current.currentTime = time;
+      };
+
+      const handleFileUpload = (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        const newTracks = files.map((file, idx) => ({
+          id: 'local-' + Date.now() + '-' + idx,
+          title: file.name.replace(/\.[^/.]+$/, ''),
+          artist: 'Local Tape Audio',
+          album: 'Uploaded Cassette',
+          duration: 0,
+          url: URL.createObjectURL(file),
+          tapeColor: '#18181b',
+          accentColor: '#3b82f6'
+        }));
+
+        setTracks((prev) => [...newTracks, ...prev]);
+        setCurrentIndex(0);
+        setIsPlaying(true);
+      };
+
+      const formatTime = (secs) => {
+        if (isNaN(secs) || secs === 0) return '00:00';
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+      };
+
+      const tapeProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+      return (
+        <div className="flex flex-col gap-3">
+          {/* Outer Hi-Fi Chassis */}
+          <div className="bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 border-4 border-zinc-700/80 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
+            
+            {/* Top Brushed Metal Plate */}
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <EsdyLogo size={34} />
+                <div>
+                  <h1 className="font-retro-header text-sm font-black tracking-widest text-zinc-100 uppercase">
+                    ESDY SMART
+                  </h1>
+                  <p className="text-[9px] font-tech text-blue-400 font-bold uppercase tracking-wider">
+                    AUTO-REVERSE CASSETTE DECK
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMegaBass(!megaBass)}
+                  className={`px-2.5 py-1 rounded font-tech text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                    megaBass
+                      ? 'bg-red-950/80 text-red-400 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  }`}
+                >
+                  BASS {megaBass ? 'ON' : 'OFF'}
+                </button>
+
+                <button
+                  onClick={() => setShowPlaylist(!showPlaylist)}
+                  className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded text-[10px] font-tech font-bold uppercase"
+                >
+                  Tapes ({tracks.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Cassette Well & Reel Window */}
+            <div className="mt-3 bg-zinc-950 border-2 border-zinc-800 rounded-xl p-3 shadow-inner relative tape-window-grid">
+              
+              {/* Tape Body */}
+              <div 
+                className="w-full rounded-lg p-2.5 flex flex-col justify-between shadow-lg relative overflow-hidden border border-zinc-700/50"
+                style={{ backgroundColor: currentTrack.tapeColor }}
+              >
+                <div className="reflection-overlay absolute inset-0 pointer-events-none" />
+
+                {/* Tape Label Header */}
+                <div className="bg-zinc-100/90 text-zinc-900 px-2 py-1 rounded flex items-center justify-between font-tech text-[10px] font-bold z-10">
+                  <span className="truncate max-w-[200px]">SIDE {tapeSide} • {currentTrack.title}</span>
+                  <span className="text-blue-700 shrink-0 font-extrabold">ESDY-90</span>
+                </div>
+
+                {/* Cassette Spools */}
+                <div className="my-3 flex items-center justify-around py-2 z-10">
+                  {/* Left Spool */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-16 h-16 rounded-full bg-zinc-900 border-4 border-zinc-400 flex items-center justify-center relative shadow-md">
+                      {/* Magnetic Tape Thickness */}
+                      <div 
+                        className="absolute rounded-full bg-amber-950/80 border border-amber-900"
+                        style={{ width: `${Math.max(28, 56 - (tapeProgress * 0.28))}px`, height: `${Math.max(28, 56 - (tapeProgress * 0.28))}px` }}
+                      />
+                      {/* Spool Teeth */}
+                      <div className={`w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center relative z-10 ${isPlaying ? 'spin-reel' : ''}`}>
+                        <div className="w-2 h-2 bg-zinc-900 rounded-full" />
+                        <div className="absolute w-6 h-1 bg-zinc-400 rounded-sm" />
+                        <div className="absolute w-1 h-6 bg-zinc-400 rounded-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Center Tape Window / Counter */}
+                  <div className="flex flex-col items-center">
+                    <div className="bg-black/90 border border-zinc-700 px-3 py-1 rounded font-lcd text-lg text-emerald-400 tracking-widest shadow-inner">
+                      {formatTime(currentTime)}
+                    </div>
+                    <span className="text-[8px] font-tech text-zinc-400 mt-1 uppercase tracking-widest">
+                      {isPlaying ? '▶ PLAYING' : '❚❚ PAUSED'}
+                    </span>
+                  </div>
+
+                  {/* Right Spool */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-16 h-16 rounded-full bg-zinc-900 border-4 border-zinc-400 flex items-center justify-center relative shadow-md">
+                      {/* Magnetic Tape Thickness */}
+                      <div 
+                        className="absolute rounded-full bg-amber-950/80 border border-amber-900"
+                        style={{ width: `${Math.max(28, 28 + (tapeProgress * 0.28))}px`, height: `${Math.max(28, 28 + (tapeProgress * 0.28))}px` }}
+                      />
+                      {/* Spool Teeth */}
+                      <div className={`w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center relative z-10 ${isPlaying ? 'spin-reel' : ''}`}>
+                        <div className="w-2 h-2 bg-zinc-900 rounded-full" />
+                        <div className="absolute w-6 h-1 bg-zinc-400 rounded-sm" />
+                        <div className="absolute w-1 h-6 bg-zinc-400 rounded-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub Artist Info */}
+                <div className="text-center font-tech text-[10px] text-zinc-300 truncate z-10">
+                  {currentTrack.artist} — <span className="text-zinc-400">{currentTrack.album}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Dual Analog VU Meters */}
+            <div className="mt-3 bg-zinc-950 border border-zinc-800 rounded-xl p-2 flex flex-col gap-1.5 font-tech text-[9px]">
+              <div className="flex items-center gap-2">
+                <span className="w-3 text-zinc-400 font-bold">L</span>
+                <div className="flex-1 h-2 bg-zinc-900 rounded overflow-hidden flex">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-red-500 transition-all duration-100"
+                    style={{ width: `${vuLeft}%` }}
+                  />
+                </div>
+                <span className="w-6 text-right text-zinc-400">{Math.round(vuLeft)}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 text-zinc-400 font-bold">R</span>
+                <div className="flex-1 h-2 bg-zinc-900 rounded overflow-hidden flex">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 via-yellow-400 to-red-500 transition-all duration-100"
+                    style={{ width: `${vuRight}%` }}
+                  />
+                </div>
+                <span className="w-6 text-right text-zinc-400">{Math.round(vuRight)}%</span>
+              </div>
+            </div>
+
+            {/* Time Seek Bar */}
+            <div className="mt-3 flex flex-col gap-1">
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                className="w-full accent-blue-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg appearance-none"
+              />
+              <div className="flex justify-between font-tech text-[10px] text-zinc-400">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Mechanical Transport Piano Keys */}
+            <div className="mt-3 grid grid-cols-5 gap-1.5">
+              {/* PREV */}
+              <button
+                onClick={handlePrev}
+                className="py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-0.5 border border-zinc-700 rounded-lg font-tech font-bold text-xs uppercase flex flex-col items-center justify-center shadow"
+              >
+                <span>|◀◀</span>
+                <span className="text-[8px] text-zinc-400">REW</span>
+              </button>
+
+              {/* PLAY */}
+              <button
+                onClick={togglePlay}
+                className={`py-2.5 active:translate-y-0.5 border rounded-lg font-tech font-bold text-xs uppercase flex flex-col items-center justify-center shadow ${
+                  isPlaying 
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-emerald-400 border-zinc-700'
+                }`}
+              >
+                <span>{isPlaying ? '❚❚' : '▶'}</span>
+                <span className="text-[8px]">{isPlaying ? 'PAUSE' : 'PLAY'}</span>
+              </button>
+
+              {/* STOP */}
+              <button
+                onClick={() => {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                }}
+                className="py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-0.5 border border-zinc-700 rounded-lg font-tech font-bold text-xs uppercase flex flex-col items-center justify-center shadow text-red-400"
+              >
+                <span>◼</span>
+                <span className="text-[8px] text-zinc-400">STOP</span>
+              </button>
+
+              {/* NEXT */}
+              <button
+                onClick={handleNext}
+                className="py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-0.5 border border-zinc-700 rounded-lg font-tech font-bold text-xs uppercase flex flex-col items-center justify-center shadow"
+              >
+                <span>▶▶|</span>
+                <span className="text-[8px] text-zinc-400">FWD</span>
+              </button>
+
+              {/* TAPE FLIP / AUTO REVERSE */}
+              <button
+                onClick={() => setTapeSide(prev => prev === 'A' ? 'B' : 'A')}
+                className="py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-0.5 border border-zinc-700 rounded-lg font-tech font-bold text-xs uppercase flex flex-col items-center justify-center shadow text-blue-400"
+              >
+                <span>⮂</span>
+                <span className="text-[8px] text-zinc-400">SIDE {tapeSide}</span>
+              </button>
+            </div>
+
+            {/* Local MP3 Upload */}
+            <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between">
+              <label className="cursor-pointer px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-tech font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow transition-all">
+                <span>📁 Insert Audio Files</span>
+                <input 
+                  type="file" 
+                  accept="audio/*" 
+                  multiple 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                />
+              </label>
+              
+              <div className="flex items-center gap-2">
+                <span className="font-tech text-[10px] text-zinc-400 font-bold">VOL</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volume}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setVolume(v);
+                    audioRef.current.volume = v;
+                  }}
+                  className="w-16 accent-blue-500 cursor-pointer h-1.5 bg-zinc-800 rounded appearance-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Cassette Library Drawer */}
+          {showPlaylist && (
+            <div className="bg-zinc-900 border-2 border-zinc-700 rounded-xl p-3 shadow-xl">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                <h3 className="font-tech font-bold text-xs uppercase text-zinc-200">Cassette Tape Deck Collection</h3>
+                <span className="text-[10px] font-tech text-zinc-400">{tracks.length} Tapes Ready</span>
+              </div>
+              <div className="mt-2 flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                {tracks.map((t, idx) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setCurrentIndex(idx);
+                      setIsPlaying(true);
+                    }}
+                    className={`flex items-center justify-between p-2 rounded-lg text-left text-xs font-tech transition-all ${
+                      currentIndex === idx
+                        ? 'bg-blue-600 text-white font-bold'
+                        : 'bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800'
+                    }`}
+                  >
+                    <div className="truncate flex items-center gap-2">
+                      <span>{currentIndex === idx && isPlaying ? '▶' : `${idx + 1}.`}</span>
+                      <span className="truncate">{t.title}</span>
+                    </div>
+                    <span className="text-[10px] shrink-0 opacity-75">{t.artist}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
